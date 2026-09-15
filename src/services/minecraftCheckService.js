@@ -1,3 +1,5 @@
+import logger from '../utils/logger.js';
+
 let botConfig = null;
 
 const getMinecraftCheckConfig = () => {
