@@ -18,6 +18,7 @@ import {
   isValidCountingMessage,
   recordCorrectCount,
 } from '../services/countingGameService.js';
+import { consumeLinkCode } from '../services/minecraftCheckService.js';
 
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
@@ -26,9 +27,17 @@ export default {
   name: Events.MessageCreate,
   async execute(message, client) {
     try {
-      if (message.author.bot || !message.guild) return;
+      if (message.author.bot) return;
 
-      logger.debug(`Message received from ${message.author.tag}: ${message.content}`);
+      // Minecraft / oXCheak link codes are handled in Discord DMs.
+      if (!message.guild) {
+        await handleMinecraftLinkMessage(message);
+        return;
+      }
+
+      logger.debug(
+        `Message received from ${message.author.tag}: ${message.content}`
+      );
 
       const countingProcessed = await handleCountingGame(message, client);
       if (countingProcessed) {
@@ -43,6 +52,42 @@ export default {
     }
   }
 };
+
+async function handleMinecraftLinkMessage(message) {
+  const content = String(message.content || '').trim();
+
+  const match = content.match(/^\/link\s+([A-Za-z0-9]+)$/i);
+
+  if (!match) {
+    return;
+  }
+
+  const code = match[1].toUpperCase();
+
+  try {
+    const result = await consumeLinkCode(code, message.author.id);
+
+    if (!result?.ok) {
+      await message.reply(
+        '❌ Код проверки недействителен или уже истёк.'
+      );
+      return;
+    }
+
+    const playerName = result.player || 'Игрок';
+
+    await message.reply(
+      `✅ Код подтверждён для Minecraft-игрока **${playerName}**.\n` +
+      `⏳ Сейчас создаю голосовой канал для проверки.`
+    );
+  } catch (error) {
+    logger.error('Minecraft link processing failed:', error);
+
+    await message.reply(
+      '❌ Не удалось связать аккаунт с проверкой. Попробуйте ещё раз через несколько секунд.'
+    );
+  }
+}
 
 async function handlePrefixCommand(message, client) {
   try {

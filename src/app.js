@@ -17,6 +17,12 @@ import { initializeMusic } from './services/music/riffySetup.js';
 import { shutdownMusic } from './services/music/playerHandler.js';
 import pkg from '../package.json' with { type: 'json' };
 import { EXPECTED_SCHEMA_VERSION, EXPECTED_SCHEMA_LABEL } from './config/database/schemaVersion.js';
+import {
+  installMinecraftCheckConfig,
+  createCheckRoom,
+  deleteCheckChannel,
+  kickCheckMember
+} from './services/minecraftCheckService.js';
 
 class TitanBot extends Client {
   constructor() {
@@ -38,6 +44,8 @@ class TitanBot extends Client {
     });
 
     this.config = config;
+    installMinecraftCheckConfig(this.config.bot);
+
     this.commands = new Collection();
     this.events = new Collection();
     this.buttons = new Collection();
@@ -131,7 +139,102 @@ class TitanBot extends Client {
       }
       next();
     });
+    
+    // oXCheak -> TitanBot bridge
+const oxSecret = this.config.bot?.minecraftCheck?.bridgeSecret || '';
 
+const oxAuth = (req) =>
+  req.headers.authorization === `Bearer ${oxSecret}`;
+
+app.post('/api/oxcheak/create-room', express.json(), async (req, res) => {
+  if (!oxAuth(req)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  if (!this.config.bot?.minecraftCheck?.enabled) {
+    return res.status(503).json({
+      error: 'minecraft_check_disabled'
+    });
+  }
+
+  try {
+    const result = await createCheckRoom(req.body || {}, this);
+
+    return res.status(200).json({
+      ok: true,
+      ...result
+    });
+  } catch (error) {
+    logger.error('oXCheak create-room failed:', error);
+
+    return res.status(500).json({
+      error: error.message || 'create_room_failed'
+    });
+  }
+});
+
+app.post('/api/oxcheak/delete-channel', express.json(), async (req, res) => {
+  if (!oxAuth(req)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  try {
+    await deleteCheckChannel(this, req.body?.channelId);
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message || 'delete_failed'
+    });
+  }
+});
+
+app.post('/api/oxcheak/kick', express.json(), async (req, res) => {
+  if (!oxAuth(req)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  try {
+    await kickCheckMember(
+      this,
+      req.body?.discordId,
+      req.body?.reason
+    );
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message || 'kick_failed'
+    });
+  }
+});
+
+app.post('/api/oxcheak/log', express.json(), async (req, res) => {
+  if (!oxAuth(req)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  try {
+    const channelId =
+      this.config.bot?.minecraftCheck?.logChannelId;
+
+    const channel = channelId
+      ? await this.channels.fetch(channelId).catch(() => null)
+      : null;
+
+    if (channel?.isTextBased()) {
+      await channel.send({
+        content: `🔎 oXCheak: ${JSON.stringify(req.body || {})}`
+      });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message || 'log_failed'
+    });
+  }
+});   
     const requestCounts = new Map();
     const windowMs = this.config.api?.rateLimit?.windowMs || 60000;
     const maxRequests = this.config.api?.rateLimit?.max || 100;

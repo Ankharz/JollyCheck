@@ -475,7 +475,70 @@ export const botConfig = {
     fun: true,
     music: true,
   },
+    features: {
+    // Core systems.
+    economy: true,
+    leveling: true,
+    moderation: true,
+    logging: true,
+    welcome: true,
+
+    // Community engagement systems.
+    tickets: true,
+    giveaways: true,
+    birthday: true,
+    counter: true,
+
+    // Security and self-service systems.
+    verification: true,
+    reactionRoles: true,
+    joinToCreate: true,
+
+    // Utility/quality-of-life modules.
+    voice: true,
+    search: true,
+    tools: true,
+    utility: true,
+    community: true,
+    fun: true,
+    music: true,
+  },
+
+  // =========================
+  // MINECRAFT / oXCheak CHECK
+  // =========================
+  minecraftCheck: {
+    enabled: process.env.MC_CHECK_ENABLED === "true",
+
+    // URL of the oXCheak bridge exposed through Cloudflare Tunnel.
+    pluginUrl: process.env.MC_CHECK_PLUGIN_URL || "",
+
+    // Shared secret between TitanBot and oXCheak.
+    bridgeSecret: process.env.MC_CHECK_BRIDGE_SECRET || "",
+
+    // Discord configuration.
+    guildId: process.env.MC_CHECK_GUILD_ID || "",
+    voiceCategoryId: process.env.MC_CHECK_VOICE_CATEGORY_ID || "",
+    moderatorRoleId: process.env.MC_CHECK_MODERATOR_ROLE_ID || "",
+    logChannelId: process.env.MC_CHECK_LOG_CHANNEL_ID || "",
+
+    // Voice channel settings.
+    channelName:
+      process.env.MC_CHECK_CHANNEL_NAME || "проверка-%player%",
+
+    inviteMaxAgeHours: Number(
+      process.env.MC_CHECK_INVITE_MAX_AGE_HOURS || 1
+    ),
+
+    inviteMaxUses: Number(
+      process.env.MC_CHECK_INVITE_MAX_USES || 1
+    ),
+
+    serverName:
+      process.env.MC_CHECK_SERVER_NAME || "Minecraft",
+  },
 };
+
 
 export function validateConfig(config) {
   const errors = [];
