@@ -56,21 +56,25 @@ export default {
 async function handleMinecraftLinkMessage(message) {
   const content = String(message.content || '').trim();
 
+  logger.info(`[MC-CHECK] DM received: "${content}" from ${message.author.id}`);
+
   const match = content.match(/^\/link\s+([A-Za-z0-9]+)$/i);
 
   if (!match) {
+    logger.info('[MC-CHECK] DM is not a /link command');
     return;
   }
 
   const code = match[1].toUpperCase();
+
+  logger.info(`[MC-CHECK] Link code received: ${code}`);
 
   try {
     const result = await consumeLinkCode(code, message.author.id);
 
     if (!result?.ok) {
       await message.reply(
-        '❌ Код проверки недействителен или уже истёк.'
-      );
+        '❌ Код проверки недействителен или уже истёк.');
       return;
     }
 
