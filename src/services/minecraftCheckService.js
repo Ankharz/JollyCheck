@@ -22,24 +22,31 @@ async function pluginRequest(path, body = {}) {
     throw new Error('MC_CHECK_BRIDGE_SECRET is not configured');
   }
 
+  logger.info(`[MC-CHECK HTTP] POST ${pluginUrl}${path}`);
+
+
   const response = await fetch(`${pluginUrl}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${secret}`,
-    },
-    body: JSON.stringify(body),
-  });
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${secret}`,
+  },
+  body: JSON.stringify(body),
+});
 
-  const text = await response.text();
+const text = await response.text();
 
-  let data = {};
+logger.info(
+  `[MC-CHECK HTTP] response status=${response.status} body=${text.slice(0, 500)}`
+);
 
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    data = { raw: text };
-  }
+let data = {};
+
+try {
+  data = text ? JSON.parse(text) : {};
+} catch {
+  data = { raw: text };
+}
 
   if (!response.ok) {
     throw new Error(
