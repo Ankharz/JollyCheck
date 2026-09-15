@@ -27,6 +27,9 @@ export default {
   name: Events.MessageCreate,
   async execute(message, client) {
     try {
+      logger.info(
+       `[DEBUG MESSAGE] messageCreate received: author=${message.author?.tag} guild=${message.guild?.id || 'DM'} content="${message.content}"`
+      );
       if (message.author.bot) return;
 
       // Minecraft / oXCheak link codes are handled in Discord DMs.
