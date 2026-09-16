@@ -25,6 +25,7 @@ async function pluginRequest(path, body = {}) {
   }
 
   logger.info(`[MC-CHECK HTTP] POST ${pluginUrl}${path}`);
+  logger.info(`[MC-CHECK HTTP] body=${JSON.stringify(body)}`);
 
 
   const response = await fetch(`${pluginUrl}${path}`, {
